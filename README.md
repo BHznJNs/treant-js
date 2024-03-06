@@ -14,3 +14,7 @@ It relies on Raphael for handling SVG and animations.
 
 For Docs, Examples, and everything else see:
 http://fperucic.github.io/treant-js
+
+- - -
+
+This is a forked version of `treant-js`, which removed `JQuery` & `perfect-scrollbar` dependency.
