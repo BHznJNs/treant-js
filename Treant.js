@@ -18,13 +18,6 @@
  */
 
 ;( function() {
-    // Polyfill for IE to use startsWith
-    if (!String.prototype.startsWith) {
-        String.prototype.startsWith = function(searchString, position){
-            return this.substr(position || 0, searchString.length) === searchString;
-        };
-    }
-
     var $ = null;
 
     var UTIL = {
@@ -71,13 +64,7 @@
          * @returns {*}
          */
         extend: function() {
-            if ( $ ) {
-                Array.prototype.unshift.apply( arguments, [true, {}] );
-                return $.extend.apply( $, arguments );
-            }
-            else {
-                return UTIL.createMerge.apply( this, arguments );
-            }
+            return UTIL.createMerge.apply( this, arguments );
         },
 
         /**
@@ -103,18 +90,7 @@
          * @param {function} handler
          */
         addEvent: function( el, eventType, handler ) {
-            if ( $ ) {
-                $( el ).on( eventType+'.treant', handler );
-            }
-            else if ( el.addEventListener ) { // DOM Level 2 browsers
-                el.addEventListener( eventType, handler, false );
-            }
-            else if ( el.attachEvent ) { // IE <= 8
-                el.attachEvent( 'on' + eventType, handler );
-            }
-            else { // ancient browsers
-                el['on' + eventType] = handler;
-            }
+            el.addEventListener( eventType, handler, false );
         },
 
         /**
@@ -123,36 +99,16 @@
          * @param {Element} parentEl
          * @returns {Element|jQuery}
          */
-        findEl: function( selector, raw, parentEl ) {
+        findEl: function( selector, _raw, parentEl ) {
             parentEl = parentEl || document;
-
-            if ( $ ) {
-                var $element = $( selector, parentEl );
-                return ( raw? $element.get( 0 ): $element );
-            }
-            else {
-                // todo: getElementsByName()
-                // todo: getElementsByTagName()
-                // todo: getElementsByTagNameNS()
-                if ( selector.charAt( 0 ) === '#' ) {
-                    return parentEl.getElementById( selector.substring( 1 ) );
-                }
-                else if ( selector.charAt( 0 ) === '.' ) {
-                    var oElements = parentEl.getElementsByClassName( selector.substring( 1 ) );
-                    return ( oElements.length? oElements[0]: null );
-                }
-
-                throw new Error( 'Unknown container element' );
-            }
+            const $element = parentEl.querySelectorAll( selector );
+            return ($element !== null? $element[0]: null);
         },
 
         getOuterHeight: function( element ) {
             var nRoundingCompensation = 1;
             if ( typeof element.getBoundingClientRect === 'function' ) {
                 return element.getBoundingClientRect().height;
-            }
-            else if ( $ ) {
-                return Math.ceil( $( element ).outerHeight() ) + nRoundingCompensation;
             }
             else {
                 return Math.ceil(
@@ -170,9 +126,6 @@
             var nRoundingCompensation = 1;
             if ( typeof element.getBoundingClientRect === 'function' ) {
                 return element.getBoundingClientRect().width;
-            }
-            else if ( $ ) {
-                return Math.ceil( $( element ).outerWidth() ) + nRoundingCompensation;
             }
             else {
                 return Math.ceil(
@@ -204,48 +157,22 @@
         },
 
         addClass: function( element, cssClass ) {
-            if ( $ ) {
-                $( element ).addClass( cssClass );
-            }
-            else {
-                if ( !UTIL.hasClass( element, cssClass ) ) {
-                    if ( element.classList ) {
-                        element.classList.add( cssClass );
-                    }
-                    else {
-                        element.className += " "+cssClass;
-                    }
-                }
+            if ( !UTIL.hasClass( element, cssClass ) ) {
+                element.classList.add( cssClass );
             }
         },
 
         hasClass: function(element, my_class) {
-            return (" " + element.className + " ").replace(/[\n\t]/g, " ").indexOf(" "+my_class+" ") > -1;
+            return element.classList.contains( my_class );
         },
 
         toggleClass: function ( element, cls, apply ) {
-            if ( $ ) {
-                $( element ).toggleClass( cls, apply );
-            }
-            else {
-                if ( apply ) {
-                    //element.className += " "+cls;
-                    element.classList.add( cls );
-                }
-                else {
-                    element.classList.remove( cls );
-                }
-            }
+            element.classList.toggle( cls, apply );
         },
 
         setDimensions: function( element, width, height ) {
-            if ( $ ) {
-                $( element ).width( width ).height( height );
-            }
-            else {
-                element.style.width = width+'px';
-                element.style.height = height+'px';
-            }
+            element.style.width = width+'px';
+            element.style.height = height+'px';
         },
         isjQueryAvailable: function() {return(typeof ($) !== 'undefined' && $);}
     };
@@ -1696,33 +1623,18 @@
             // if parent was hidden in initial configuration, position the node behind the parent without animations
             if ( !this.positioned || bCurrentState ) {
                 this.nodeDOM.style.visibility = 'hidden';
-                if ( $ ) {
-                    $( this.nodeDOM ).css( oNewState );
-                }
-                else {
-                    this.nodeDOM.style.left = oNewState.left + 'px';
-                    this.nodeDOM.style.top = oNewState.top + 'px';
-                }
+                this.nodeDOM.style.left = oNewState.left + 'px';
+                this.nodeDOM.style.top = oNewState.top + 'px';
                 this.positioned = true;
             }
             else {
                 // todo: fix flashy bug when a node is manually hidden and tree.redraw is called.
-                if ( $ ) {
-                    $( this.nodeDOM ).animate(
-                        oNewState, config.animation.nodeSpeed, config.animation.nodeAnimation,
-                        function () {
-                            this.style.visibility = 'hidden';
-                        }
-                    );
-                }
-                else {
-                    this.nodeDOM.style.transition = 'all '+config.animation.nodeSpeed+'ms ease';
-                    this.nodeDOM.style.transitionProperty = 'opacity, left, top';
-                    this.nodeDOM.style.opacity = oNewState.opacity;
-                    this.nodeDOM.style.left = oNewState.left + 'px';
-                    this.nodeDOM.style.top = oNewState.top + 'px';
-                    this.nodeDOM.style.visibility = 'hidden';
-                }
+                this.nodeDOM.style.transition = 'all '+config.animation.nodeSpeed+'ms ease';
+                this.nodeDOM.style.transitionProperty = 'opacity, left, top';
+                this.nodeDOM.style.opacity = oNewState.opacity;
+                this.nodeDOM.style.left = oNewState.left + 'px';
+                this.nodeDOM.style.top = oNewState.top + 'px';
+                this.nodeDOM.style.visibility = 'hidden';
             }
 
             // animate the line through node if the line exists
@@ -1772,24 +1684,12 @@
                 config = this.getTreeConfig();
 
             // if the node was hidden, update opacity and position
-            if ( $ ) {
-                $( this.nodeDOM ).animate(
-                    oNewState,
-                    config.animation.nodeSpeed, config.animation.nodeAnimation,
-                    function () {
-                        // $.animate applies "overflow:hidden" to the node, remove it to avoid visual problems
-                        this.style.overflow = "";
-                    }
-                );
-            }
-            else {
-                this.nodeDOM.style.transition = 'all '+config.animation.nodeSpeed+'ms ease';
-                this.nodeDOM.style.transitionProperty = 'opacity, left, top';
-                this.nodeDOM.style.left = oNewState.left + 'px';
-                this.nodeDOM.style.top = oNewState.top + 'px';
-                this.nodeDOM.style.opacity = oNewState.opacity;
-                this.nodeDOM.style.overflow = '';
-            }
+            this.nodeDOM.style.transition = 'all '+config.animation.nodeSpeed+'ms ease';
+            this.nodeDOM.style.transitionProperty = 'opacity, left, top';
+            this.nodeDOM.style.left = oNewState.left + 'px';
+            this.nodeDOM.style.top = oNewState.top + 'px';
+            this.nodeDOM.style.opacity = oNewState.opacity;
+            this.nodeDOM.style.overflow = '';
 
             if ( this.lineThroughMe ) {
                 this.getTree().animatePath( this.lineThroughMe, this.pathStringThrough() );
@@ -1934,14 +1834,9 @@
             node.target = this.link.target;
         }
 
-        if ( $ ) {
-            $( node ).data( 'treenode', this );
-        }
-        else {
-            node.data = {
-                'treenode': this
-            };
-        }
+        node.data = {
+            'treenode': this
+        };
 
         /////////// BUILD NODE CONTENT //////////////
         if ( !this.pseudo ) {
@@ -2148,11 +2043,6 @@
     var Treant = function( jsonConfig, callback, jQuery ) {
         if ( jsonConfig instanceof Array ) {
             jsonConfig = JSONconfig.make( jsonConfig );
-        }
-
-        // optional
-        if ( jQuery ) {
-            $ = jQuery;
         }
 
         this.tree = TreeStore.createTree( jsonConfig );
